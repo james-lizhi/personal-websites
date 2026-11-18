@@ -7,13 +7,14 @@ export function createAbout({reducedMotion=false,onResume}){
  const section=document.querySelector('#about'),field=document.querySelector('#about-tags');
  const portrait=document.querySelector('.about-portrait'),info=document.querySelector('.about-info');
  let layout=null,fieldWidth=0,fieldHeight=0,active=false,staticMode=false,modal=false;
+ let viewportWidth=innerWidth,viewportHeight=innerHeight;
  let lastSpawn=-Infinity,labelIndex=0,nextId=0,parallaxX=0,parallaxY=0,motionTime=0,lastOpacity=-1,anchors=[];
  const infoShift={x:0,y:0},tagShift={x:0,y:0};
  const tags=[],history=[];
  document.querySelector('#open-resume').addEventListener('click',onResume);
  function rect(element){const r=element.getBoundingClientRect();return{x:r.left,y:r.top,width:r.width,height:r.height}}
  function applyRegionMotion(){
-  const desktop=innerWidth>760;
+  const desktop=viewportWidth>760;
   infoShift.x=desktop?parallaxX*1.1:0;infoShift.y=desktop?parallaxY*1.1:0;
   tagShift.x=desktop?parallaxX*1.5:0;tagShift.y=desktop?parallaxY*1.5:0;
   if(desktop){
@@ -47,19 +48,20 @@ export function createAbout({reducedMotion=false,onResume}){
   }
  }
  function clear(){for(const tag of tags)tag.element.remove();tags.length=0;lastSpawn=-Infinity}
- function resize(){
+ function resize(width=viewportWidth,height=viewportHeight){
+  viewportWidth=width;viewportHeight=height;
   info.style.removeProperty('--info-x');info.style.removeProperty('--info-y');
   field.style.removeProperty('--tags-x');field.style.removeProperty('--tags-y');
   const fruitSlot=document.querySelector('.about-fruit-space');
   fruitSlot.style.removeProperty('translate');
   let slot=rect(fruitSlot);
-  if(innerWidth>760){fruitSlot.style.translate=`${innerWidth/2-slot.x-slot.width/2}px 0`;slot=rect(fruitSlot)}
+  if(width>760){fruitSlot.style.translate=`${width/2-slot.x-slot.width/2}px 0`;slot=rect(fruitSlot)}
   const photo=rect(portrait);photo.x-=photo.width*.14;photo.width*=1.28;
   const regions=[photo,rect(info),rect(field)];
   fieldWidth=regions[2].width;fieldHeight=regions[2].height;
   anchors=Array.from({length:5},(_,slot)=>anchor(slot));
-  const diameter=Math.min(slot.width*.88,slot.height/1.5,innerWidth<=760?166:285);
-  layout={fruit:innerWidth>760?desktopFruitPose(innerWidth,innerHeight):{x:slot.x+slot.width/2,y:slot.y+slot.height/2+diameter*.18,diameter},regions};
+  const diameter=Math.min(slot.width*.88,slot.height/1.5,width<=760?166:285);
+  layout={fruit:width>760?desktopFruitPose(width,height):{x:slot.x+slot.width/2,y:slot.y+slot.height/2+diameter*.18,diameter},regions};
   applyRegionMotion();
   tags.forEach(tag=>{const p=anchors[tag.slot];tag.x=p.x;tag.y=p.y;constrain(tag)});
  }
@@ -93,7 +95,7 @@ export function createAbout({reducedMotion=false,onResume}){
    parallaxX=nextX;parallaxY=nextY;applyRegionMotion();
    portrait.style.setProperty('--portrait-x',parallaxX+'px');portrait.style.setProperty('--portrait-y',parallaxY+'px');
   }
-  const fr=liveRegion(2),mx=(pointer.rawX??pointer.x)*innerWidth-fr.x,my=(pointer.rawY??pointer.y)*innerHeight-fr.y;
+  const fr=liveRegion(2),mx=(pointer.rawX??pointer.x)*viewportWidth-fr.x,my=(pointer.rawY??pointer.y)*viewportHeight-fr.y;
   const damping=Math.exp(-4.5*dt);
   for(const tag of tags){
    const home=anchors[tag.slot];let ax=(home.x-tag.x)*.65,ay=(home.y-tag.y)*.65;

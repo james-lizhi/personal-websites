@@ -24,11 +24,16 @@ export function createAtmosphere(canvas){
  const shader=(type,source)=>{const s=gl.createShader(type);gl.shaderSource(s,source);gl.compileShader(s);if(!gl.getShaderParameter(s,gl.COMPILE_STATUS))throw Error(gl.getShaderInfoLog(s));return s};
  const p=gl.createProgram();gl.attachShader(p,shader(gl.VERTEX_SHADER,vert));gl.attachShader(p,shader(gl.FRAGMENT_SHADER,frag));gl.linkProgram(p);gl.useProgram(p);const buffer=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,buffer);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,-1,1,1,-1,1,1]),gl.STATIC_DRAW);const a=gl.getAttribLocation(p,'position');gl.enableVertexAttribArray(a);gl.vertexAttribPointer(a,2,gl.FLOAT,false,0,0);const u={};for(const k of ['resolution','viewport','pointer','time','themeColor','themePaper','themeMix'])u[k]=gl.getUniformLocation(p,k);
  let lost=false;canvas.addEventListener('webglcontextlost',e=>{e.preventDefault();lost=true;canvas.style.opacity=0});
- function resize(){
-  const d=Math.min(devicePixelRatio,1.5),width=Math.round(innerWidth*d),height=Math.round(innerHeight*d);
-  if(canvas.width!==width)canvas.width=width;
-  if(canvas.height!==height)canvas.height=height;
-  gl.viewport(0,0,width,height);gl.uniform2f(u.resolution,width,height);gl.uniform2f(u.viewport,innerWidth,innerHeight);
+ let cssWidth=0,cssHeight=0,pixelRatio=0;
+ function resize(width=canvas.clientWidth,height=canvas.clientHeight){
+  const ratio=Math.min(devicePixelRatio,1.5);
+  if(!width||!height||(width===cssWidth&&height===cssHeight&&ratio===pixelRatio))return;
+  cssWidth=width;cssHeight=height;pixelRatio=ratio;
+  const bufferWidth=Math.round(width*ratio),bufferHeight=Math.round(height*ratio);
+  if(canvas.width!==bufferWidth)canvas.width=bufferWidth;
+  if(canvas.height!==bufferHeight)canvas.height=bufferHeight;
+  gl.viewport(0,0,bufferWidth,bufferHeight);
+  gl.uniform2f(u.resolution,bufferWidth,bufferHeight);gl.uniform2f(u.viewport,width,height);
  }resize();
  return{resize,render(time,pointer,theme){if(lost)return;gl.uniform1f(u.time,time);gl.uniform3f(u.pointer,pointer.x,pointer.y,pointer.active);gl.uniform3fv(u.themeColor,theme?.color??[.902,.224,.275]);gl.uniform3fv(u.themePaper,theme?.paper??[1,1,.992]);gl.uniform1f(u.themeMix,theme?.strength??0);gl.drawArrays(gl.TRIANGLES,0,6)}};
 }

@@ -7,8 +7,8 @@ import {aboutVisibility,brandVisibility,galleryScroll,desktopFruitPose,mobileFru
 export {projects};
 export function createGallery(canvas,{onProject,onHover,onFallback,reducedMotion,isAboutTarget=()=>false,isNavigationTarget=()=>false}){
  let renderer;try{renderer=new THREE.WebGLRenderer({canvas,alpha:true,antialias:true,powerPreference:'high-performance'});}catch{onFallback();return{resize(){},render(){},available:false}}
- renderer.setPixelRatio(Math.min(devicePixelRatio,1.75));renderer.setClearColor(0xffffff,0);renderer.outputColorSpace=THREE.LinearSRGBColorSpace;renderer.autoClear=false;
- const scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(45,innerWidth/innerHeight,.1,50);camera.position.z=8.1;
+ renderer.setClearColor(0xffffff,0);renderer.outputColorSpace=THREE.LinearSRGBColorSpace;renderer.autoClear=false;
+ const scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(45,1,.1,50);camera.position.z=8.1;
  // Hit tests and rendering use the same world matrices, updated once before both.
  scene.matrixWorldAutoUpdate=false;
  const lychee=createLychee();scene.add(lychee.group);lychee.group.children[0].renderOrder=10;
@@ -49,11 +49,14 @@ export function createGallery(canvas,{onProject,onHover,onFallback,reducedMotion
   return{target:'background',index:-1};
  }
  canvas.addEventListener('pointerdown',e=>{pointerDown={x:e.clientX,y:e.clientY};dragging=false});canvas.addEventListener('pointermove',e=>{if(Math.abs(e.clientX-pointerDown.x)+Math.abs(e.clientY-pointerDown.y)>9)dragging=true});canvas.addEventListener('click',e=>{if(dragging)return;const hit=resolveTarget(e.clientX,e.clientY);if(hit.target==='card')onProject(hit.index)});canvas.addEventListener('webglcontextlost',e=>{e.preventDefault();onFallback()});
- function resize(){
-  if(w!==innerWidth||h!==innerHeight){
-   w=innerWidth;h=innerHeight;mobile=w<=760;renderer.setSize(w,h,false);
+ function resize(width=canvas.clientWidth,height=canvas.clientHeight){
+  if(!width||!height)return;
+  const ratio=Math.min(devicePixelRatio,1.75);
+  if(renderer.getPixelRatio()!==ratio)renderer.setPixelRatio(ratio);
+  if(w!==width||h!==height){
+   w=width;h=height;mobile=w<=760;renderer.setSize(w,h,false);
    camera.aspect=w/h;camera.fov=THREE.MathUtils.radToDeg(2*Math.atan(Math.tan(THREE.MathUtils.degToRad((mobile?35.5:65.7)/2))/(w/h)));
-   camera.updateProjectionMatrix();camera.updateMatrixWorld(true);worldPerPixel=2*Math.tan(THREE.MathUtils.degToRad(camera.fov/2))*8.1/h;type.resize();
+   camera.updateProjectionMatrix();camera.updateMatrixWorld(true);worldPerPixel=2*Math.tan(THREE.MathUtils.degToRad(camera.fov/2))*8.1/h;type.resize(w,h);
   }
   brandRect=document.querySelector('#brand').getBoundingClientRect();
  }resize();
@@ -65,6 +68,7 @@ export function createGallery(canvas,{onProject,onHover,onFallback,reducedMotion
  }
  function snapToScroll(scroll){progress=-2.7+Math.max(0,galleryScroll(scroll)-1.18)/.52;oldProgress=progress;velocity=0;fruitProgress=scroll}
  return {available:true,resize,cardFrame,snapToScroll,setDialog(open){dialogOpen=open;if(open)setHovered(-1)},inspect(){const center=lychee.group.getWorldPosition(new THREE.Vector3()).project(camera);const cardBounds=cards.filter(m=>m.visible&&m.material.uniforms.uOpacity.value>.08).map(m=>{const a=m.geometry.attributes.position,p=new THREE.Vector3();let left=Infinity,right=-Infinity,top=Infinity,bottom=-Infinity;for(let i=0;i<a.count;i++){p.fromBufferAttribute(a,i).applyMatrix4(m.matrixWorld).project(camera);const x=(p.x*.5+.5)*w,y=(.5-p.y*.5)*h;left=Math.min(left,x);right=Math.max(right,x);top=Math.min(top,y);bottom=Math.max(bottom,y)}return{index:m.userData.index,left,right,top,bottom,opacity:m.material.uniforms.uOpacity.value}});return{cardBounds,target:hoverTarget,hoveredProject:hovered,cardAccents:cards.map(m=>m.material.uniforms.uAccent.value.toArray()),titleHover,fruitHover,titleBounds:type.getBounds(),fruitCenter:{x:(center.x*.5+.5)*w,y:(.5-center.y*.5)*h},diameter:lastDiameter,visibleShadows:shadows.filter(s=>s.visible).length}},render(time,dt,scroll,pointer,reveal,aboutLayout,motionEnabled=true){
+ if(!w||!h)return null;
  const galleryPosition=galleryScroll(scroll);
  const about=aboutVisibility(scroll,w),brand=brandVisibility(scroll,w);
  aboutOpacity=about;
