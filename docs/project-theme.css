@@ -1,0 +1,6 @@
+:root{--hover-accent:var(--red)}
+#cursor{color:var(--hover-accent);transition:opacity .22s,scale .35s var(--ease),color .32s var(--ease)}
+.work-index b{color:var(--hover-accent);transition:color .32s var(--ease)}
+.cue-mark i{background-color:var(--hover-accent);transition:background-color .32s var(--ease)}
+#work-name{white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere;line-height:1.5}
+.reader-footer strong{min-width:0;overflow-wrap:anywhere}
